@@ -1,3 +1,73 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    background-color: #f2f2f2;
+}
+.book-card-container{
+    padding: 1rem;
+    display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.book-card {
+    width: calc(33% - 20px); /* Adjust as needed */
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .book-card img {
+    width: 200px;
+    height: auto;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+  
+  .book-details {
+    flex-grow: 1;
+    padding: 20px;
+  }
+  
+  .book-details h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  
+  .book-details p {
+    margin-bottom: 10px;
+  }
+  
+  .book-details .btn {
+    display: inline-block;
+    background-color: #007bff;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  .book-details .btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .btn-recommend:hover {
+    background-color: #45a049;
+  }
+  

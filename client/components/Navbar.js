@@ -29,7 +29,6 @@ const Navbar = ({ isLoggedIn }) => {
         <div className={`${styles.links} ${isMenuOpen ? styles.open : ''}`}>
           <Link href="/">Ana Sayfa</Link>
           <Link href="/recommend">Bana Kitap Öner</Link>
-          <Link href="/trending">Çok Satanlar</Link>
           <Link href="/contact">İletişim</Link>
           {isLoggedIn ? (
             <Link href="/profile">

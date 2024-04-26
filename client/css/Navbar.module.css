@@ -3,7 +3,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background-color: #f0f0f0;
+    background-color: #2c1a0b;
   }
   
   .navbarLeft {
@@ -24,6 +24,8 @@
   }
   
   .siteName {
+    color: whitesmoke;
+    font-size: 18px;
     font-weight: bold;
   }
   
@@ -36,7 +38,7 @@
   .menuIcon {
     width: 25px;
     height: 3px;
-    background-color: #333;
+    background-color: whitesmoke;
     margin: 2px 0;
     transition: transform 0.3s ease;
   }
@@ -61,10 +63,14 @@
   .links a {
     margin-left: 1rem;
   }
-
+  
   .links a {
     margin-left: 1rem;
-    color: #333;
+  }
+
+  .links a {
+    color: whitesmoke;
+    margin-left: 1rem;
     text-decoration: none;
     position: relative;
     font-weight: normal;
@@ -106,7 +112,10 @@
       padding: 1rem;
       box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     }
-  
+    .links a {
+      color: black;
+    }
+ 
     .links.open {
       display: flex;
     }

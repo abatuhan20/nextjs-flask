@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 
 /* Component imports */
 import Navbar from '@/components/Navbar';
-import Anasayfa from '@/components/Anasayfa'
+import Anasayfa from '@/components/Anasayfa';
+import Recommend from '@/components/Recommend';
+import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 const Home = () => {
   const [message, setMessage] = useState('Loading');
@@ -32,10 +34,8 @@ const Home = () => {
     <div>
       <Navbar isLoggedIn={isLoggedIn}/>
       <Anasayfa/>
-      <div>{message}</div>
-      {kitap.map((book, index) => (
-        <div key={index}>{book}</div>
-      ))}
+      <Recommend/>
+      <ScrollToTopButton/>
     </div>
   );
 }
