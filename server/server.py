@@ -1,10 +1,28 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import random
+from dotenv import load_dotenv
+import os
+from openai import OpenAI
 
-# app instance
-app = Flask(__name__)
-CORS(app)
+# Sırası çok önemli burayı uygulamazsam keyi çekmiyor asla
+load_dotenv()
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY"),
+)
+
+# GPT 3-small modelini kullanarak embedding olusturuyorum
+def calculate_gpt_embedding(text):
+    try:
+        response = client.embeddings.create(
+            input=text,
+            model="text-embedding-3-small"
+        )
+        return response.data[0].embedding
+    except Exception as e:
+        # Log the error
+        print(f"Error in calculating GPT embedding: {e}")
+        return None
 
 # Dummy book data
 dummy_books = [
@@ -63,15 +81,60 @@ dummy_books = [
         'siteUrl': 'https://www.kitapyurdu.com/kitap/nietzsche-agladiginda/9632.html'
     }
 ]
+# Book descriptionlarının embeddinglerini tuttugum array (dictionary)
+book_embeddings = {book['title']: calculate_gpt_embedding(book['description']) for book in dummy_books}
 
-# /api/home
-@app.route("/api/home", methods=['GET'])
+
+app = Flask(__name__)
+CORS(app)
+
+# Endpoint
+@app.route("/api/home", methods=['GET', 'POST'])
 def return_home():
+    # Datayı frontendden alıyorum
+    data = request.json
+    user_text = data.get('text')
+    if not user_text:
+        return jsonify({'error': 'Text parameter is missing'}), 400
+
+    # Userdan aldigim textin embeddingini alıyorum
+    user_embedding = calculate_gpt_embedding(user_text)
+
+    if user_embedding is None:
+        return jsonify({'error': 'Failed to calculate GPT embedding'}), 500
+
+    # Cosine similarity hesapliyorum
+    def cosine_similarity(a, b):
+        dot_product = sum(x * y for x, y in zip(a, b))
+        magnitude_a = sum(x ** 2 for x in a) ** 0.5
+        magnitude_b = sum(y ** 2 for y in b) ** 0.5
+        return dot_product / (magnitude_a * magnitude_b)
+
+    # Userin girdigi text bilgisi ile her kitabın descriptionunun cosine similaritylerini hesaplıyorum.
+    similarities = [(book['title'], cosine_similarity(user_embedding, calculate_gpt_embedding(book['description']))) for book in dummy_books]
+
+    # Similarity score göre kitapları sıralıyorum
+    sorted_books = sorted(similarities, key=lambda x: x[1], reverse=True)
+
+    recommendations = [
+        {
+            'title': book[0],
+            'author': next((item['author'] for item in dummy_books if item['title'] == book[0]), None),
+            'publisher': next((item['publisher'] for item in dummy_books if item['title'] == book[0]), None),
+            'description': next((item['description'] for item in dummy_books if item['title'] == book[0]), None),
+            'similarityScore': book[1],
+            'siteUrl': next((item['siteUrl'] for item in dummy_books if item['title'] == book[0]), None),
+            'imageUrl': next((item['imageUrl'] for item in dummy_books if item['title'] == book[0]), None)
+        }
+        for book in sorted_books[:3]
+    ]
+
+
     return jsonify({
-        'message': "Hello world! My Book Recommendation site template.",
-        'kitap': dummy_books
+        'message': "Book Recommendations",
+        'books': recommendations,
     })
 
-# python server.py başlatma kodu
+# Port önemli serveri başlatıyor
 if __name__ == "__main__":
     app.run(debug=True, port=8080)

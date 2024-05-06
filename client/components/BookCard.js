@@ -1,7 +1,7 @@
 import React from 'react';
 
-const BookCard = ({ title, author, publisher, description, rating, siteUrl, imageUrl }) => {
-    const truncatedDescription = description.length > 150 ? description.substring(0, 150) + '...' : description;
+const BookCard = ({ title, author, publisher, description, similarityScore, siteUrl, imageUrl }) => {
+  const truncatedDescription = description && description.length > 150 ? description.substring(0, 150) + '...' : description;
     
   return (
     <div className="book-card">
@@ -11,7 +11,7 @@ const BookCard = ({ title, author, publisher, description, rating, siteUrl, imag
         <p><strong>Author:</strong> {author}</p>
         <p><strong>Publisher:</strong> {publisher}</p>
         <p><strong>Description:</strong> {truncatedDescription}</p>
-        <p><strong>Rating:</strong> {rating}</p>
+        <p><strong>Similarity Score:</strong> {similarityScore}</p>
         <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="btn">Siteye Git</a>
       </div>
     </div>
