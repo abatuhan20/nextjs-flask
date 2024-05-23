@@ -1,12 +1,23 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '@/components/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
 import logo from "../public/logo.png"
 import styles from '../css/Navbar.module.css';
 import { CgProfile } from "react-icons/cg";
 
-const Navbar = ({ isLoggedIn }) => {
+
+const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isLoggedIn, setIsLoggedIn } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    router.push('/'); // Kullanıcıyı ana sayfaya yönlendir
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -31,9 +42,12 @@ const Navbar = ({ isLoggedIn }) => {
           <Link href="/recommend">Bana Kitap Öner</Link>
           <Link href="/contact">İletişim</Link>
           {isLoggedIn ? (
+            <div className='flex'>
             <Link href="/profile">
               <div className='flex'><CgProfile className='m-1'/>Profil</div>
             </Link>
+             <button onClick={handleLogout} className={`${styles.logoutButton} flex`}>Çıkış Yap</button>
+             </div>
           ) : (
             <>
               <Link href="/login">Giriş Yap</Link>

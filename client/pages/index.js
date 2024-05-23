@@ -2,15 +2,12 @@
 import React, { useEffect, useState } from 'react';
 
 /* Component imports */
-import Navbar from '@/components/Navbar';
 import Anasayfa from '@/components/Anasayfa';
 import Recommend from '@/components/Recommend';
-import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 const Home = () => {
   const [message, setMessage] = useState('Loading');
   const [kitap, setKitap] = useState([]);
-  const isLoggedIn = true;
 
   useEffect(() => {
     fetch('http://localhost:8080/api/home')
@@ -32,10 +29,8 @@ const Home = () => {
 
   return (
     <div>
-      <Navbar isLoggedIn={isLoggedIn}/>
       <Anasayfa/>
       <Recommend/>
-      <ScrollToTopButton/>
     </div>
   );
 }

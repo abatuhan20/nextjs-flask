@@ -3,5 +3,10 @@
     "paths": {
       "@/*": ["./*"]
     }
-  }
+  },
+  "include": [
+    "components/*",
+    "pages/*",
+    "auth.js" // auth.js dosyası burada dahil edilmelidir
+  ]
 }

@@ -1,17 +1,48 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import random
-from dotenv import load_dotenv
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
+from datetime import timedelta
+import mysql.connector
 import os
 from openai import OpenAI
+import json
+from dotenv import load_dotenv
+import numpy as np
 
-# Sırası çok önemli burayı uygulamazsam keyi çekmiyor asla
+# Load environment variables
 load_dotenv()
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
 
-# GPT 3-small modelini kullanarak embedding olusturuyorum
+# Initialize OpenAI client
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+# MySQL connection
+mydb = mysql.connector.connect(
+    host=os.environ.get("HOST"),
+    user=os.environ.get("USER"),
+    password=os.environ.get("PASSWORD"),
+    database=os.environ.get("DATABASE"),
+    charset='utf8mb4'
+)
+mycursor = mydb.cursor(buffered=True)
+def parse_embedding(embedding_str):
+    return np.array([float(x) for x in embedding_str.split(',')])
+
+# Flask app setup
+app = Flask(__name__)
+CORS(app)
+bcrypt = Bcrypt(app)
+app.config["JWT_SECRET_KEY"] = "mysuperuperdubersecretkey"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+jwt = JWTManager(app)
+
+@app.route('/api/verify_token', methods=['POST'])
+@jwt_required()  # Bu endpoint sadece doğrulanmış kullanıcılar için erişilebilir olacak
+def verify_token():
+    current_user = get_jwt_identity()
+    return jsonify(message='Token is valid', user=current_user), 200
+# Function to calculate GPT embedding
+
 def calculate_gpt_embedding(text):
     try:
         response = client.embeddings.create(
@@ -20,121 +51,185 @@ def calculate_gpt_embedding(text):
         )
         return response.data[0].embedding
     except Exception as e:
-        # Log the error
         print(f"Error in calculating GPT embedding: {e}")
         return None
 
-# Dummy book data
-dummy_books = [
-    {
-        'title': 'Söyleme Bilmesinler',
-        'author': 'Şermin Yaşar',
-        'publisher': 'DOĞAN KİTAP',
-        'description': '“Yalansızız artık. Hâlâ birkaç sırrımız var. Ama yalansızız. Evlenip aynı çatı altında yaşıyorlar diye karı koca olur mu insanlar?',
-        'rating': random.randint(1, 5),
-        'imageUrl': 'https://img.kitapyurdu.com/v1/getImage/fn:11815086/wh:true/wi:220',
-        'siteUrl': 'https://www.kitapyurdu.com/kitap/soyleme-bilmesinler/668247.html'
-    },
-    {
-        'title': 'Cehaletten Kurtulma Sanatı',
-        'author': 'Celal Şengör ',
-        'publisher': 'MASA KİTAP',
-        'description': 'Tarihte kanunlar veya kurallar değil, kişiler ve onların şahsî dehâları önemlidir. Tarihin doğal kanunları olduğunu zannedenler hep hüsrana uğramışlardır. Onun için bu kitapta okuyucularıma, birkaç büyük insanın çarpıcı bulduğum yönlerini anlatmak istedim. Bu ve benzeri insanlar hayatta bana kılavuz oldu. ',
-        'rating': random.randint(1, 5),
-        'imageUrl': 'https://img.kitapyurdu.com/v1/getImage/fn:11879538/wh:true/wi:220',
-        'siteUrl': 'https://www.kitapyurdu.com/kitap/cehaletten-kurtulma-sanati-kim-kimdir/680331.html'
-    },
-    {
-        'title': 'İnsanlığımı Yitirirken',
-        'author': 'Osamu Dazai',
-        'publisher': 'KAPRA YAYINCILIK',
-        'description': 'Gerçek bir korkak, mutluluktan bile dehşet duyar. Ham pamuktan bile berelenir. Neşeden bile yaralanır',
-        'rating': random.randint(1, 5),
-        'imageUrl': 'https://img.kitapyurdu.com/v1/getImage/fn:11801746/wh:true/wi:220',
-        'siteUrl': 'https://www.kitapyurdu.com/kitap/insanligimi-yitirirken/665638.html'
-    },
-    {
-        'title': 'Üç Cisim Problemi',
-        'author': 'Cixin Liu',
-        'publisher': 'İTHAKİ YAYINLARI',
-        'description': 'Yılın bilimkurgu romanı Üç Cisim Problemi, Çince aslından çevirisiyle Türkçede! 2015 Hugo En İyi Roman Ödülü 2014 Nebula Ödülü Adayı 2015 Locus Ödülü Adayı 2015 John W. Campbell Ödülü Adayı Gizli bir askeri proje, uzaylılarla iletişime geçmek için uzaya sinyal gönderir. Bu sinyali yakalayan, yıkımın eşiğindeki bir uygarlık ise Dünya’yı kendisi için istemektedir. “Olağanüstü bir kitap, bilimsel ve felsefi tartışmaların eşsiz bir karışımı.” –George R. R. Martin, Buz ve Ateşin Şarkısı serisinin Hugo, Nebula ve Locus ödüllü yazarı “Cixin Liu, bilimkurgunun süperstarı.” –John Scalzi, Yaşlı Adamın Savaşı serisinin Hugo ve',
-        'rating': random.randint(1, 5),
-        'imageUrl': 'https://img.kitapyurdu.com/v1/getImage/fn:11332315/wh:true/wi:220',
-        'siteUrl': 'https://www.kitapyurdu.com/kitap/uc-cisim-problemi/379066.html'
-    },
-    {
-        'title': 'Aşk Hikayesi',
-        'author': 'Prof. Dr. İskender Pala ',
-        'publisher': 'KAPI YAYINLARI',
-        'description': 'Daha senden gayrı âşık mı yoktur Nedir bu telaşın hay deli gönül Hele düşün devr-i Âdem’den beri Neler gelmiş geçmiş say deli gönülRuhsatî10 Haziran 1617 sabahı Kulaksız Kabristanı’nda hatun kişi mezarı üzerinde, biri hanım üç ceset bulundu. Erkekler mezara kapaklanmış, kadın da erkeklerden birine sarılmış vaziyetteydi. Devrin ases teşkilatı aylar sonra üçünün de aynı vakitte öldüğünü açıkladı; aşk yüzünden…',
-        'rating': random.randint(1, 5),
-        'imageUrl': 'https://img.kitapyurdu.com/v1/getImage/fn:11875304/wh:true/wi:220',
-        'siteUrl': 'https://www.kitapyurdu.com/kitap/ask-hikayesi/662242.html'
-    },
-    {
-        'title': 'Nietzsche Ağladığında',
-        'author': 'Irvin D. Yalom',
-        'publisher': 'AYRINTI YAYINLARI',
-        'description': 'Yoğun ve sürükleyici olan yeni bir düşünce romanı sunuyoruz: Nietzsche Ağladığında. Edebiyatla da düşünülebileceğini gösteren müthiş bir örnek...SAHNE Psikanalizin doğumu arifesindeki 19. yüzyıl Viyana’sı. Entelektüel ortamlar. Hava soğuk.AKTÖRLER Nietzche: Henüz iki kitabı yayımlanmış, kimsenin tanımadığı bir filozof. Yalnızlığı seçmiş. Acılarıyla barışmış. İhaneti tatmış. Tek sahip olduğu şey, valizi ve kafasında tasarladığı kitaplar. Karısı, toplumsal görevleri ve vatanı yok. İnzivayı seviyor. Tanrı’yı öldürmüş. “Ümit kötülüklerin en',
-        'rating': random.randint(1, 5),
-        'imageUrl': 'https://img.kitapyurdu.com/v1/getImage/fn:11852743/wh:true/wi:220',
-        'siteUrl': 'https://www.kitapyurdu.com/kitap/nietzsche-agladiginda/9632.html'
-    }
-]
-# Book descriptionlarının embeddinglerini tuttugum array (dictionary)
-book_embeddings = {book['title']: calculate_gpt_embedding(book['description']) for book in dummy_books}
-
-
-app = Flask(__name__)
-CORS(app)
-
-# Endpoint
-@app.route("/api/home", methods=['GET', 'POST'])
+# Endpoint to return home
+@app.route("/api/home", methods=['POST'])
 def return_home():
-    # Datayı frontendden alıyorum
     data = request.json
     user_text = data.get('text')
     if not user_text:
         return jsonify({'error': 'Text parameter is missing'}), 400
 
-    # Userdan aldigim textin embeddingini alıyorum
     user_embedding = calculate_gpt_embedding(user_text)
-
     if user_embedding is None:
         return jsonify({'error': 'Failed to calculate GPT embedding'}), 500
 
-    # Cosine similarity hesapliyorum
     def cosine_similarity(a, b):
         dot_product = sum(x * y for x, y in zip(a, b))
         magnitude_a = sum(x ** 2 for x in a) ** 0.5
         magnitude_b = sum(y ** 2 for y in b) ** 0.5
         return dot_product / (magnitude_a * magnitude_b)
 
-    # Userin girdigi text bilgisi ile her kitabın descriptionunun cosine similaritylerini hesaplıyorum.
-    similarities = [(book['title'], cosine_similarity(user_embedding, calculate_gpt_embedding(book['description']))) for book in dummy_books]
-
-    # Similarity score göre kitapları sıralıyorum
+    mycursor.execute("SELECT title, description FROM books")
+    books = mycursor.fetchall()
+    
+    similarities = [(book[0], cosine_similarity(user_embedding, calculate_gpt_embedding(book[1]))) for book in books]
     sorted_books = sorted(similarities, key=lambda x: x[1], reverse=True)
 
     recommendations = [
         {
             'title': book[0],
-            'author': next((item['author'] for item in dummy_books if item['title'] == book[0]), None),
-            'publisher': next((item['publisher'] for item in dummy_books if item['title'] == book[0]), None),
-            'description': next((item['description'] for item in dummy_books if item['title'] == book[0]), None),
+            'author': next((item['author'] for item in books if item['title'] == book[0]), None),
+            'publisher': next((item['publisher'] for item in books if item['title'] == book[0]), None),
+            'description': next((item['description'] for item in books if item['title'] == book[0]), None),
             'similarityScore': book[1],
-            'siteUrl': next((item['siteUrl'] for item in dummy_books if item['title'] == book[0]), None),
-            'imageUrl': next((item['imageUrl'] for item in dummy_books if item['title'] == book[0]), None)
+            'siteUrl': next((item['site_url'] for item in books if item['title'] == book[0]), None),
+            'imageUrl': next((item['image_url'] for item in books if item['title'] == book[0]), None)
         }
         for book in sorted_books[:3]
     ]
-
 
     return jsonify({
         'message': "Book Recommendations",
         'books': recommendations,
     })
 
-# Port önemli serveri başlatıyor
+# Endpoint for user registration
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    sql = "INSERT INTO users (username, password, first_name, last_name) VALUES (%s, %s, %s, %s)"
+    val = (username, hashed_password, first_name, last_name)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    return jsonify({'message': 'User registered successfully'}), 201
+
+# Endpoint for user login
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    mycursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    user = mycursor.fetchone()
+
+    if user and bcrypt.check_password_hash(user[2], password):
+        access_token = create_access_token(identity=username)
+        return jsonify({'message': 'Login successful', 'access_token': access_token})
+    else:
+        return jsonify({'message': 'Invalid credentials'}), 401
+
+# Endpoint for user profile
+@app.route('/api/profile', methods=['GET', 'POST'])
+@jwt_required()
+def profile():
+    current_user = get_jwt_identity()
+    mycursor.execute("SELECT * FROM users WHERE username = %s", (current_user,))
+    user = mycursor.fetchone()
+    
+    if request.method == 'GET':
+        return jsonify({
+            'username': user[1],
+            'first_name': user[3],
+            'last_name': user[4],
+            'profile_image_url': user[5],
+            'selected_books': json.loads(user[6]) if user[6] else []
+        })
+
+    if request.method == 'POST':
+        data = request.json
+        selected_books = json.dumps(data.get('selected_books'),ensure_ascii=False)
+        sql = "UPDATE users SET selected_books = %s WHERE username = %s"
+        val = (selected_books, current_user)
+        mycursor.execute(sql, val)
+        mydb.commit()
+        return jsonify({'message': 'Profile updated successfully'})
+
+# Endpoint for getting all books
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    mycursor.execute("SELECT title FROM books")
+    books = mycursor.fetchall()
+    return jsonify([book[0] for book in books])
+
+@app.route('/api/recommendations', methods=['POST'])
+@jwt_required()
+def recommendations():
+    current_user = get_jwt_identity()
+    mycursor.execute("SELECT selected_books FROM users WHERE username = %s", (current_user,))
+    selected_books_json = mycursor.fetchone()[0]
+
+    if not selected_books_json:
+        return jsonify({'error': 'No books selected'}), 400
+
+    selected_books = json.loads(selected_books_json)
+    selected_embeddings = []
+    for book_title in selected_books:
+        mycursor.execute("SELECT embedding_vector FROM books WHERE title = %s", (book_title,))
+        embedding = mycursor.fetchone()
+        if embedding:
+            try:
+                selected_embeddings.append(parse_embedding(embedding[0]))
+            except ValueError as e:
+                print(f"Error parsing embedding for book {book_title}: {e}")
+                continue
+
+    def cosine_similarity(a, b):
+        dot_product = np.dot(a, b)
+        magnitude_a = np.linalg.norm(a)
+        magnitude_b = np.linalg.norm(b)
+        if magnitude_a == 0 or magnitude_b == 0:
+            return 0
+        return dot_product / (magnitude_a * magnitude_b)
+
+    mycursor.execute("SELECT title, embedding_vector FROM books")
+    all_books = mycursor.fetchall()
+
+    similarities = []
+    for book in all_books:
+        if book[0] in selected_books:
+            continue
+        try:
+            book_embedding = parse_embedding(book[1])
+        except ValueError as e:
+            print(f"Error parsing embedding for book {book[0]}: {e}")
+            continue
+        similarity = max(cosine_similarity(book_embedding, selected_embedding) for selected_embedding in selected_embeddings)
+        similarities.append((book[0], similarity))
+
+    sorted_books = sorted(similarities, key=lambda x: x[1], reverse=True)
+    recommendations = sorted_books[:3]
+
+    recommended_books = []
+    for book in recommendations:
+        mycursor.execute("SELECT title, author, publisher, description, site_url, image_url FROM books WHERE title = %s", (book[0],))
+        book_data = mycursor.fetchone()
+        if book_data:
+            recommended_books.append({
+                'title': book_data[0],
+                'author': book_data[1],
+                'publisher': book_data[2],
+                'description': book_data[3],
+                'siteUrl': book_data[4],
+                'imageUrl': book_data[5],
+                'similarityScore': book[1]
+            })
+
+    return jsonify({
+        'message': "Recommended Books",
+        'books': recommended_books,
+    })
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
