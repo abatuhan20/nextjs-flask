@@ -10,13 +10,10 @@ import json
 from dotenv import load_dotenv
 import numpy as np
 
-# Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# MySQL connection
 mydb = mysql.connector.connect(
     host=os.environ.get("HOST"),
     user=os.environ.get("USER"),
@@ -28,7 +25,6 @@ mycursor = mydb.cursor(buffered=True)
 def parse_embedding(embedding_str):
     return np.array([float(x) for x in embedding_str.split(',')])
 
-# Flask app setup
 app = Flask(__name__)
 CORS(app)
 bcrypt = Bcrypt(app)
@@ -37,11 +33,11 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 jwt = JWTManager(app)
 
 @app.route('/api/verify_token', methods=['POST'])
-@jwt_required()  # Bu endpoint sadece doğrulanmış kullanıcılar için erişilebilir olacak
+@jwt_required()
 def verify_token():
     current_user = get_jwt_identity()
     return jsonify(message='Token is valid', user=current_user), 200
-# Function to calculate GPT embedding
+
 
 def calculate_gpt_embedding(text):
     try:
@@ -54,7 +50,7 @@ def calculate_gpt_embedding(text):
         print(f"Error in calculating GPT embedding: {e}")
         return None
 
-# Endpoint to return home
+
 @app.route("/api/home", methods=['POST'])
 def return_home():
     data = request.json
@@ -96,7 +92,7 @@ def return_home():
         'books': recommendations,
     })
 
-# Endpoint for user registration
+
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
@@ -113,7 +109,7 @@ def register():
     mydb.commit()
     return jsonify({'message': 'User registered successfully'}), 201
 
-# Endpoint for user login
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -129,7 +125,7 @@ def login():
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
-# Endpoint for user profile
+
 @app.route('/api/profile', methods=['GET', 'POST'])
 @jwt_required()
 def profile():
@@ -155,7 +151,7 @@ def profile():
         mydb.commit()
         return jsonify({'message': 'Profile updated successfully'})
 
-# Endpoint for getting all books
+
 @app.route('/api/books', methods=['GET'])
 def get_books():
     mycursor.execute("SELECT title FROM books")
@@ -208,7 +204,7 @@ def recommendations():
         similarities.append((book[0], similarity))
 
     sorted_books = sorted(similarities, key=lambda x: x[1], reverse=True)
-    recommendations = sorted_books[:3]
+    recommendations = sorted_books[:6]
 
     recommended_books = []
     for book in recommendations:

@@ -24,8 +24,8 @@ mydb = mysql.connector.connect(
 mycursor = mydb.cursor()
 
 book_data = []
-for i in range(24):
-    url = 'https://www.kitapyurdu.com/index.php?route=product/category&page=' + str(24 + i + 2) + '&filter_category_all=true&path=1&filter_in_stock=1&sort=purchased_365&order=DESC'
+for i in range(50):
+    url = 'https://www.kitapyurdu.com/index.php?route=product/category&page=' + str(i + 2) + '&filter_category_all=true&path=1&filter_in_stock=1&sort=purchased_365&order=DESC'
 
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
     response = requests.get(url, headers=headers)

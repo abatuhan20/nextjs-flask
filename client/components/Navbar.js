@@ -16,7 +16,7 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
-    router.push('/'); // Kullanıcıyı ana sayfaya yönlendir
+    router.push('/');
   };
 
   const toggleMenu = () => {
