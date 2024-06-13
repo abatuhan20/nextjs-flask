@@ -8,10 +8,10 @@ const BookCard = ({ title, author, publisher, description, similarityScore, site
       <img src={imageUrl} alt={title} className="book-image" />
       <div className="book-details">
         <h2>{title}</h2>
-        <p><strong>Author:</strong> {author}</p>
-        <p><strong>Publisher:</strong> {publisher}</p>
-        <p><strong>Description:</strong> {truncatedDescription}</p>
-        <p><strong>Similarity Score:</strong> {similarityScore}</p>
+        <p><strong>Yazar:</strong> {author}</p>
+        <p><strong>Yayıncı:</strong> {publisher}</p>
+        <p><strong>Açıklama:</strong> {truncatedDescription}</p>
+        <p><strong>Benzerlik Skoru:</strong> {similarityScore}</p>
         <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="btn">Siteye Git</a>
       </div>
     </div>
